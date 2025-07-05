@@ -91,7 +91,7 @@ export default function SignInPage() {
           {/*  Sign-Up Option */}
           <Text color="gray.600" fontSize="sm" mb={3}>
             Don't have an account?{" "}
-            <Text as="span" color="blue.800" cursor="pointer" fontWeight="bold">
+            <Text as="span" color="blue.800" cursor="pointer" fontWeight="bold" onClick={() => router.push("/signup")}>
               Sign Up
             </Text>
           </Text>

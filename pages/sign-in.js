@@ -13,16 +13,29 @@ import {
   HStack,
   Icon,
 } from "@chakra-ui/react";
-import { FaGoogle, FaApple, FaMicrosoft, FaPhone } from "react-icons/fa";
+// import { FaGoogle, FaApple, FaMicrosoft, FaPhone } from "react-icons/fa";
 import Navbar from "../components/Navbar";
+import { useUserStore } from "../userStore";
 
 export default function SignInPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [checkingLogin, setCheckingLogin] = useState(false);
+
+  const { token, expiry, refreshTokenIfExpiring, email, password, setEmail, setPassword } = useUserStore();
+
+  const login = async () => {
+    setCheckingLogin(true);
+    // if (apiToken !== "" && Date.now() <= expiry) {
+    //   alert("You are already logged in!");
+    //   return;
+    // }
+    await refreshTokenIfExpiring();
+    setCheckingLogin(false);
+    console.log(token);
+  }
 
   return (
     <Box>
-      {/*  Navbar */}
       <Navbar />
 
       {/*  Main Content */}
@@ -71,27 +84,42 @@ export default function SignInPage() {
               p={3}
               _placeholder={{ color: "gray.400" }}
             />
-          </FormControl>
+            <Input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              bg="white"
+              marginTop="15px"
+              border="1px solid #CBD5E0"
+              borderRadius="10px"
+              p={3}
+              _placeholder={{ color: "gray.400" }}
+            />
 
-          {/*  Continue Button */}
-          <Button
-            width="full"
-            bgGradient="linear(to-r, #4C9FFF, #007BFF)"
-            color="white"
-            _hover={{ bgGradient: "linear(to-r, #007BFF, #4C9FFF)", transform: "scale(1.05)" }}
-            _active={{ transform: "scale(0.96)" }}
-            transition="0.3s ease-in-out"
-            p={6}
-            borderRadius="12px"
-            mb={4}
-          >
-            Continue
-          </Button>
+            <Button
+              width="full"
+              bgGradient="linear(to-r, #4C9FFF, #007BFF)"
+              color="white"
+              marginTop="15px"
+              _hover={{ bgGradient: "linear(to-r, #007BFF, #4C9FFF)", transform: "scale(1.05)" }}
+              _active={{ transform: "scale(0.96)" }}
+              transition="0.3s ease-in-out"
+              p={6}
+              borderRadius="12px"
+              mb={4}
+              onSubmit={() => login()}
+              onClick={() => login()}
+              isLoading={checkingLogin}
+            >
+              Sign In
+            </Button>
+          </FormControl>
 
           {/*  Sign-Up Option */}
           <Text color="gray.600" fontSize="sm" mb={3}>
             Don't have an account?{" "}
-            <Text as="span" color="blue.800" cursor="pointer" fontWeight="bold">
+            <Text as="span" color="blue.800" cursor="pointer" fontWeight="bold" onClick={() => router.push("/signup")}>
               Sign Up
             </Text>
           </Text>
@@ -100,7 +128,7 @@ export default function SignInPage() {
           <Divider borderColor="gray.300" my={4} />
 
           {/*  Sign-in Options */}
-          <VStack spacing={3}>
+          {/* <VStack spacing={3}>
             <Button
               width="full"
               leftIcon={<Icon as={FaGoogle} />}
@@ -152,7 +180,7 @@ export default function SignInPage() {
             >
               Continue with Phone
             </Button>
-          </VStack>
+          </VStack> */}
         </Box>
       </Box>
     </Box>

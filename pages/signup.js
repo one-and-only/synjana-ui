@@ -16,6 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { FaGoogle, FaApple, FaMicrosoft, FaArrowLeft } from "react-icons/fa";
 import Navbar from "../components/Navbar";
+import { create } from "zustand";
 
 export default function SignupPage() {
   const router = useRouter();

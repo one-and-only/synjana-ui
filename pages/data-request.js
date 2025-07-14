@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import {
   Box,
@@ -6,10 +6,8 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
   Textarea,
   Button,
-  VStack,
   HStack,
   Icon,
   Tooltip,
@@ -20,13 +18,10 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import {
-  FaDatabase,
-  FaListAlt,
-  FaCog,
-  FaCommentDots,
   FaInfoCircle,
   FaSlidersH,
   FaTrash,
+  FaUpload,
 } from "react-icons/fa";
 import axios from "axios";
 import Navbar from "../components/Navbar";
@@ -37,154 +32,113 @@ export default function DataRequestPage() {
 
   const [industry, setIndustry] = useState("");
   const [dataPoints, setDataPoints] = useState(1000);
-  const [features, setFeatures] = useState("");
-  const [distribution, setDistribution] = useState("Normal");
-  const [context, setContext] = useState("");
-  const [outputFormat, setOutputFormat] = useState("CSV");
   const [featureConstraints, setFeatureConstraints] = useState([""]);
+  const [datasetFile, setDatasetFile] = useState(null);
+  const [context, setContext] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const storedFeatures = JSON.parse(localStorage.getItem("savedFeatures")) || "";
-    setFeatures(storedFeatures);
-  }, []);
 
   const handleAddConstraint = () => {
     setFeatureConstraints([...featureConstraints, ""]);
   };
 
   const handleConstraintChange = (index, value) => {
-    const updatedConstraints = [...featureConstraints];
-    updatedConstraints[index] = value;
-    setFeatureConstraints(updatedConstraints);
+    const updated = [...featureConstraints];
+    updated[index] = value;
+    setFeatureConstraints(updated);
   };
 
   const handleRemoveConstraint = (index) => {
-    const updatedConstraints = [...featureConstraints];
-    updatedConstraints.splice(index, 1);
-    setFeatureConstraints(updatedConstraints);
+    const updated = [...featureConstraints];
+    updated.splice(index, 1);
+    setFeatureConstraints(updated);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    setDatasetFile(file || null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    if (!industry.trim() || !features.trim()) {
-        toast({
-            title: "Missing Required Fields",
-            description: "Please enter the industry and key features.",
-            status: "error",
-            duration: 3000,
-            isClosable: true,
-        });
-        setLoading(false);
-        return;
-    }
-
-    if (dataPoints < 1 || dataPoints > 5000 || isNaN(dataPoints)) {
-        toast({
-            title: "Invalid Data Points",
-            description: "Please enter a valid number between 1 and 5000.",
-            status: "error",
-            duration: 3000,
-            isClosable: true,
-        });
-        setLoading(false);
-        return;
-    }
-
-    localStorage.setItem("savedFeatures", JSON.stringify(features));
-
-  
-    let formattedConstraints = Array.isArray(featureConstraints)
-      ? featureConstraints
-        .map((c) => c?.trim()) 
-        .filter((c) => c.length > 0) 
-      : [];
-
-   
-    const constraintsText =
-      formattedConstraints.length > 0 ? formattedConstraints.join(", ") : "No constraints applied.";
-
-    const prompt = `
-        Generate a structured synthetic dataset in ${outputFormat} format.
-        - The dataset should have ${dataPoints} rows with these columns: ${features}.
-        - Use a ${distribution} distribution for numerical values.
-        - Constraints: ${constraintsText}
-        - Additional Context: ${context}.
-        - The output must start directly with data without explanations.
-    `;
-
-    const requestData = {
-      industry,
-      dataPoints,
-      features,
-      distribution,
-      outputFormat,
-      context,
-      timestamp: new Date().toISOString(),
-    };
-
-    try {
-      
-      const storeResponse = await axios.post("/api/storePrompt", requestData);
-        
-      if (storeResponse.status !== 201) {
-          throw new Error("Failed to store request in MongoDB.");
-      }
-
-      console.log("✔ Data stored successfully in MongoDB. Proceeding with OpenAI request...");
-      
-     
-      console.log("⏳ Sending request to OpenAI...");
-      const response = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-4-turbo",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: 4096, // 
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (typeof response.data !== "object") {
-        console.error(" Invalid JSON Response:", response.data);
-        throw new Error("Received non-JSON response from OpenAI API.");
-      }
-      
-
-      if (!response.data.choices || response.data.choices.length === 0) {
-        throw new Error("No choices returned from OpenAI API.");
-      }
-
-      let generatedData =
-        response.data.choices?.[0]?.message?.content ||
-        "Error generating data.";
-      
-      console.log("📝 Processed Data:", generatedData);
-
-      router.push(`/results?generatedData=${encodeURIComponent(generatedData)}`);
-    } catch (error) {
-      console.error("Error generating data:", error.response?.data || error.message);
+    if (!industry.trim()) {
       toast({
-        title: "Failed to generate data",
-        description: "There was an error processing your request.",
+        title: "Industry required",
+        description: "Please enter the industry for the dataset.",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
-      router.push(`/results?generatedData=Failed to generate synthetic data.`);
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
-  };
+    if (dataPoints < 1 || dataPoints > 5000 || isNaN(dataPoints)) {
+      toast({
+        title: "Invalid Number of Data Points",
+        description: "Please enter a valid number between 1 and 100,000.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      setLoading(false);
+      return;
+    }
 
+    if (!datasetFile) {
+      toast({
+        title: "Dataset file missing",
+        description: "Please upload a CSV, JSON, JSONL, or Apache Parquet file.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      setLoading(false);
+      return;
+    }
+
+    const formattedConstraints = featureConstraints
+      .map((c) => c.trim())
+      .filter((c) => c);
+
+    const prompt = `You will receive a dataset describing ${industry}. Fill temporal gaps and return a synthetic dataset with exactly ${dataPoints} rows in CSV format. Constraints: ${formattedConstraints.length ? formattedConstraints.join(", ") : "None"}. Additional context (for reference only): ${context}. The output must begin directly with data (no prose).`;
+
+    const formData = new FormData();
+    formData.append("industry", industry);
+    formData.append("dataPoints", dataPoints);
+    formData.append("constraints", JSON.stringify(formattedConstraints));
+    formData.append("context", context);
+    formData.append("prompt", prompt);
+    formData.append("datasetFile", datasetFile);
+
+    try {
+      // const { data } = await axios.post("/api/generateSynthetic", formData, {
+      //   headers: { "Content-Type": "multipart/form-data" },
+      // });
+
+      // router.push(
+      //   `/results?generatedData=${encodeURIComponent(data?.generatedData || "")}`
+      // );
+      alert("Functionality will be implemented soon!");
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Generation failed",
+        description: "Something went wrong while generating data.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      router.push(
+        `/results?generatedData=${encodeURIComponent(
+          "Failed to generate synthetic data."
+        )}`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box>
@@ -208,66 +162,35 @@ export default function DataRequestPage() {
             Synthetic Data Generator
           </Heading>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
             <Grid templateColumns="repeat(2, 1fr)" gap={6}>
               <GridItem>
-                <FormControl>
-                  <FormLabel>Industry *</FormLabel>
-                  <Input value={industry} onChange={(e) => setIndustry(e.target.value)} required />
+                <FormControl isRequired>
+                  <FormLabel>Industry</FormLabel>
+                  <Input value={industry} onChange={(e) => setIndustry(e.target.value)} />
                 </FormControl>
               </GridItem>
 
               <GridItem>
-                <FormControl>
-                  <FormLabel>Key Features *</FormLabel>
-                  <Input value={features} onChange={(e) => setFeatures(e.target.value)} required />
-                </FormControl>
-              </GridItem>
-            </Grid>
-
-            <Grid templateColumns="repeat(2, 1fr)" gap={6} mt={6}>
-              <GridItem>
-                <FormControl>
-                  <FormLabel>Data Points *</FormLabel>
+                <FormControl isRequired>
+                  <FormLabel>Data Points</FormLabel>
                   <Input
                     type="number"
+                    min="1"
+                    max="100000"
                     value={dataPoints}
                     onChange={(e) => setDataPoints(parseInt(e.target.value) || 1)}
-                    min="1"
-                    max="5000"
-                    required
                   />
                 </FormControl>
               </GridItem>
-
-              <GridItem>
-                <FormControl>
-                  <FormLabel>Distribution</FormLabel>
-                  <Select value={distribution} onChange={(e) => setDistribution(e.target.value)}>
-                    <option value="Normal">Normal</option>
-                    <option value="Uniform">Uniform</option>
-                    <option value="Exponential">Exponential</option>
-                  </Select>
-                </FormControl>
-              </GridItem>
             </Grid>
 
-            {/* Feature Constraints Section */}
             <FormControl mt={6}>
               <HStack justifyContent="space-between">
                 <FormLabel>Feature Constraints</FormLabel>
                 <Tooltip
                   hasArrow
-                  label={
-                    <Box>
-                      <b>Feature Constraints</b> allow you to define limits for each feature.
-                      <ul style={{ marginLeft: "10px", marginTop: "5px" }}>
-                        <li>Example 1: "Age should be between 18 and 65."</li>
-                        <li>Example 2: "Salary should be above 30,000."</li>
-                        <li>Click "Add Constraint" to define multiple constraints.</li>
-                      </ul>
-                    </Box>
-                  }
+                  label={<Box><b>Feature Constraints</b> let you constrain columns. Examples: Age between 18 and 65; Salary above 30,000.</Box>}
                   fontSize="sm"
                   bg="gray.700"
                   color="white"
@@ -280,7 +203,7 @@ export default function DataRequestPage() {
               {featureConstraints.map((constraint, index) => (
                 <HStack key={index} mt={2}>
                   <Input
-                    placeholder='Example: "Age should be between 18 and 65."'
+                    placeholder='e.g. "Age 18-65"'
                     value={constraint}
                     onChange={(e) => handleConstraintChange(index, e.target.value)}
                     width="85%"
@@ -295,11 +218,19 @@ export default function DataRequestPage() {
               </Button>
             </FormControl>
 
-            {/*  Context Field */}
+            <FormControl mt={6} isRequired>
+              <FormLabel>Dataset File</FormLabel>
+              <Input
+                type="file"
+                accept=".csv, application/json, application/jsonlines, application/vnd.apache.parquet"
+                onChange={handleFileChange}
+              />
+            </FormControl>
+
             <FormControl mt={6}>
-              <FormLabel>Context</FormLabel>
+              <FormLabel>Context (optional)</FormLabel>
               <Textarea
-                placeholder="Provide additional context if needed"
+                placeholder="Notes for your own reference..."
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 height="100px"

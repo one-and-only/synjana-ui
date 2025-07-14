@@ -20,18 +20,20 @@ import { useUserStore } from "../userStore";
 export default function SignInPage() {
   const router = useRouter();
   const [checkingLogin, setCheckingLogin] = useState(false);
+  const [formEmail, setFormEmail] = useState("");
+  const [formPassword, setFormPassword] = useState("");
 
-  const { token, expiry, refreshTokenIfExpiring, email, password, setEmail, setPassword } = useUserStore();
+  const { apiToken, expiry, refreshTokenIfExpiring } = useUserStore();
 
   const login = async () => {
     setCheckingLogin(true);
-    // if (apiToken !== "" && Date.now() <= expiry) {
-    //   alert("You are already logged in!");
-    //   return;
-    // }
+    if (apiToken !== "" && Date.now() <= expiry) {
+      alert("You are already logged in!");
+      return;
+    }
     await refreshTokenIfExpiring();
     setCheckingLogin(false);
-    console.log(token);
+    console.log(apiToken);
   }
 
   return (
@@ -76,8 +78,8 @@ export default function SignInPage() {
             <Input
               type="email"
               placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formEmail}
+              onChange={(e) => setFormEmail(e.target.value)}
               bg="white"
               border="1px solid #CBD5E0"
               borderRadius="10px"
@@ -87,8 +89,8 @@ export default function SignInPage() {
             <Input
               type="password"
               placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formPassword}
+              onChange={(e) => setFormPassword(e.target.value)}
               bg="white"
               marginTop="15px"
               border="1px solid #CBD5E0"

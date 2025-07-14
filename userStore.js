@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { SynjanaCustodialApi } from "@aurora-interactive/synjana-custodial-api";
-import EncryptedStorage from "./encryptedStorageEngine";
 
 const apiClient = new SynjanaCustodialApi()
 
@@ -9,8 +8,6 @@ export const useUserStore = create(
     persist((set, get) => ({
         apiToken: "",
         expiry: -1,
-        email: "",
-        password: "",
 
         refreshTokenIfExpiring: async () => {
             if (get().expiry === -1 || Date.now() > get().expiry) {
@@ -29,11 +26,7 @@ export const useUserStore = create(
                 alert(`Username: ${userInfo.username}\nEmail: ${userInfo.email}\nName: ${userInfo.firstName}${userInfo.middleName !== null ? ` ${userInfo.middleName}` : ""} ${userInfo.lastName}\nAffiliated With Enterprise: ${userInfo.enterpriseAffiliationEntityName !== null ? "Yes" : "No"}`);
             } else console.log("Token is still fresh!");
         },
-        setEmail: (email) => set(s => ({ token: s.token, expiry: s.expiry, email, password: s.password })),
-        setPassword: (password) => set(s => ({ token: s.token, expiry: s.expiry, email: s.email, password })),
-    }),
-        {
-            storage: new EncryptedStorage(process.env.ZUSTAND_ENCRYPTION_KEY ?? "fVbMIvMIevw3ysdaWFnX5p/8kx6zvXak/Xv+9JsFVbk=", "synjana-webui"),
-            name: "synjana-webui"
-        }
-    ));
+    })),
+    {
+        name: "synjana-webui"
+    });

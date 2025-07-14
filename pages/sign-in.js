@@ -31,7 +31,7 @@ export default function SignInPage() {
       alert("You are already logged in!");
       return;
     }
-    await refreshTokenIfExpiring();
+    await refreshTokenIfExpiring(formEmail, formPassword);
     setCheckingLogin(false);
     console.log(apiToken);
   }

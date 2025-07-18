@@ -18,12 +18,6 @@ export const useUserStore = create(
                 }
 
                 set(s => ({ apiToken: response.token, expiry: Date.now() + 24 * 60 * 60 * 1000 })); // 1 day expiry in ms
-                const userInfo = await apiClient.users.usersInfo({
-                    headers: {
-                        Authorization: `Bearer ${response.token}`
-                    }
-                });
-                alert(`Username: ${userInfo.username}\nEmail: ${userInfo.email}\nName: ${userInfo.firstName}${userInfo.middleName !== null ? ` ${userInfo.middleName}` : ""} ${userInfo.lastName}\nAffiliated With Enterprise: ${userInfo.enterpriseAffiliationEntityName !== null ? "Yes" : "No"}`);
             } else console.log("Token is still fresh!");
         },
     }), {

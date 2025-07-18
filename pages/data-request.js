@@ -31,11 +31,16 @@ export default function DataRequestPage() {
   const toast = useToast();
 
   const [industry, setIndustry] = useState("");
-  const [dataPoints, setDataPoints] = useState(1000);
+  const [numSamples, setNumSamples] = useState(1000);
   const [featureConstraints, setFeatureConstraints] = useState([""]);
   const [datasetFile, setDatasetFile] = useState(null);
   const [context, setContext] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const generateData = async () => {
+    const { data } = await axios.get(`http://localhost:8000/generate?username=Revvz&dataset_id=6&num_samples=1`)
+    alert(data)
+  }
 
   const handleAddConstraint = () => {
     setFeatureConstraints([...featureConstraints, ""]);
@@ -74,7 +79,7 @@ export default function DataRequestPage() {
       return;
     }
 
-    if (dataPoints < 1 || dataPoints > 5000 || isNaN(dataPoints)) {
+    if (numSamples < 1 || numSamples > 5000 || isNaN(numSamples)) {
       toast({
         title: "Invalid Number of Data Points",
         description: "Please enter a valid number between 1 and 100,000.",
@@ -102,39 +107,31 @@ export default function DataRequestPage() {
       .map((c) => c.trim())
       .filter((c) => c);
 
-    const prompt = `You will receive a dataset describing ${industry}. Fill temporal gaps and return a synthetic dataset with exactly ${dataPoints} rows in CSV format. Constraints: ${formattedConstraints.length ? formattedConstraints.join(", ") : "None"}. Additional context (for reference only): ${context}. The output must begin directly with data (no prose).`;
-
     const formData = new FormData();
-    formData.append("industry", industry);
-    formData.append("dataPoints", dataPoints);
-    formData.append("constraints", JSON.stringify(formattedConstraints));
-    formData.append("context", context);
-    formData.append("prompt", prompt);
     formData.append("datasetFile", datasetFile);
 
     try {
-      // const { data } = await axios.post("/api/generateSynthetic", formData, {
-      //   headers: { "Content-Type": "multipart/form-data" },
-      // });
+      const { data } = await axios.post("http://localhost:8000/preprocess_dataset?dataset_format=csv&username=Revvz", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      // router.push(
-      //   `/results?generatedData=${encodeURIComponent(data?.generatedData || "")}`
-      // );
+      if (data.success) {
+        alert("Successfully preprocessed your dataset, redirecting to data generation page.");
+      }
+
+      router.push(
+        `/tasks/${crypto.randomUUID()}?datasetId=${data.datasetId}`
+      );
       alert("Functionality will be implemented soon!");
     } catch (err) {
       console.error(err);
       toast({
         title: "Generation failed",
-        description: "Something went wrong while generating data.",
+        description: "Something went wrong while preprocessing your dataset",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
-      router.push(
-        `/results?generatedData=${encodeURIComponent(
-          "Failed to generate synthetic data."
-        )}`
-      );
     } finally {
       setLoading(false);
     }
@@ -178,8 +175,8 @@ export default function DataRequestPage() {
                     type="number"
                     min="1"
                     max="100000"
-                    value={dataPoints}
-                    onChange={(e) => setDataPoints(parseInt(e.target.value) || 1)}
+                    value={numSamples}
+                    onChange={(e) => setNumSamples(parseInt(e.target.value) || 1)}
                   />
                 </FormControl>
               </GridItem>
@@ -238,7 +235,11 @@ export default function DataRequestPage() {
             </FormControl>
 
             <Button type="submit" colorScheme="blue" size="lg" w="full" mt={6}>
-              {loading ? <Spinner size="sm" /> : "Generate Data"}
+              {loading ? <Spinner size="sm" /> : "Preprocess Dataset"}
+            </Button>
+
+            <Button mt={3} size="sm" onClick={generateData}>
+              Generate Data
             </Button>
           </form>
         </Container>

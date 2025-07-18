@@ -14,9 +14,8 @@ import {
   Icon,
   Flex,
 } from "@chakra-ui/react";
-import { FaGoogle, FaApple, FaMicrosoft, FaArrowLeft } from "react-icons/fa";
+import { /*FaGoogle, FaApple, FaMicrosoft,*/ FaArrowLeft } from "react-icons/fa";
 import Navbar from "../components/Navbar";
-import { create } from "zustand";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -115,7 +114,7 @@ export default function SignupPage() {
           <Divider borderColor="gray.300" my={4} />
 
           {/*  Social Auth Options */}
-          <VStack spacing={3}>
+          {/* <VStack spacing={3}>
             <Button
               width="full"
               leftIcon={<Icon as={FaGoogle} />}
@@ -154,7 +153,7 @@ export default function SignupPage() {
             >
               Continue with Apple
             </Button>
-          </VStack>
+          </VStack> */}
         </Box>
       </Box>
     </Box>

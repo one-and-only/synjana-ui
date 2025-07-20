@@ -27,57 +27,76 @@ import {
 } from "@chakra-ui/react";
 import { InfoOutlineIcon, DownloadIcon } from "@chakra-ui/icons";
 import Navbar from "../components/Navbar";
+import { useUserStore } from "../userStore";
+import { SynjanaCustodialApi } from "@aurora-interactive/synjana-custodial-api";
 
-async function fetchDatasetMeta(datasetId) {
-  // TODO: Replace with custodial REST API call
-  await new Promise((r) => setTimeout(r, 400)); // simulate latency for placeholder
-  return {
-    name: `Project Crude Oil Sales - FY2026`,
-    userInfo: "Placeholder user notes",
-    originalFileName: "oil_sales_fy25.csv",
-    taskId: "abcdef123",
-    startedAt: Date.now() - 8.64e7,
-    sizeBytes: 2_048_576,
-    mimeType: "text/csv",
-    presignedUrl: "https://example.com/presigned-placeholder.csv",
-  };
-}
+const apiSdk = new SynjanaCustodialApi();
 
 export default function HistoryPage() {
   const [records, setRecords] = useState([]);
   const [datasetMeta, setDatasetMeta] = useState(null);
   const [loadingMeta, setLoadingMeta] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const apiToken = useUserStore(state => state.apiToken);
 
   useEffect(() => {
-    setRecords([
-      {
-        name: "Example dataset",
-        timestamp: Date.now(),
-        industry: "Oil Extraction And Refinement",
-        dataPoints: 50000
-      }
-    ])
-  }, []);
+    async function getDatasets() {
+      if (!apiToken || apiToken === "") return;
 
-  const openDatasetModal = useCallback(async (datasetId) => {
+      const datasets = await apiSdk.datasets.datasetsHistory({
+        headers: {
+          "Authorization": `Bearer ${apiToken}`
+        }
+      });
+
+      setRecords(datasets.datasets.map(dataset => (
+        {
+          name: dataset.name,
+          timestamp: dataset.createdAt,
+          industry: dataset.industry,
+          dataPoints: dataset.numDataPoints,
+          datasetId: dataset.datasetId,
+          size: dataset.size,
+          dataType: dataset.dataType
+        }
+      )));
+    }
+    getDatasets();
+  }, [apiToken]);
+
+  const openDatasetModal = useCallback((datasetId) => {
     setLoadingMeta(true);
     onOpen();
-    try {
-      const meta = await fetchDatasetMeta(datasetId);
-      setDatasetMeta(meta);
-    } finally {
-      setLoadingMeta(false);
-    }
-  }, [onOpen]);
 
-  const downloadDataset = () => {
-    if (!datasetMeta?.presignedUrl) return;
+    console.log(records);
+    console.log(datasetId);
+    const meta = records?.filter(x => x.datasetId === datasetId)[0];
+
+    setDatasetMeta(meta);
+    setLoadingMeta(false);
+  }, [onOpen, records]);
+
+  const downloadDataset = async () => {
+    // get a presigned S3 URL from our storage provider via Custodial REST API
+    if (!datasetMeta.datasetId) {
+      alert("No Dataset ID found for download!");
+      return;
+    }
+
+    const downloadUrlData = await apiSdk.datasets.datasetsDownload({ datasetId: datasetMeta.datasetId }, {
+      headers: {
+        "Authorization": `Bearer ${apiToken}`
+      }
+    });
+
+    if (!downloadUrlData.success) {
+      alert("Failed to get presigned URL!");
+    }
 
     // use the browser to start the file download
     const link = document.createElement("a");
-    link.href = datasetMeta.presignedUrl;
-    link.download = datasetMeta.originalFileName;
+    link.href = downloadUrlData.downloadUrl;
+    link.download = datasetMeta.name;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -164,11 +183,11 @@ export default function HistoryPage() {
               <VStack align="start" spacing={2}>
                 <Text><strong>Name:</strong> {datasetMeta.name}</Text>
                 <Text><strong>User notes:</strong> {datasetMeta.userInfo}</Text>
-                <Text><strong>Original file:</strong> {datasetMeta.originalFileName}</Text>
-                <Text><strong>Generation Task ID:</strong> {datasetMeta.taskId}</Text>
-                <Text><strong>Generation Start:</strong> {new Date(datasetMeta.startedAt).toLocaleString()}</Text>
-                <Text><strong>Size:</strong> {(datasetMeta.sizeBytes / 1_048_576).toFixed(2)} MB</Text>
-                <Text><strong>MIME type:</strong> {datasetMeta.mimeType}</Text>
+                {/* <Text><strong>Original file:</strong> {datasetMeta.originalFileName}</Text> */}
+                {/* <Text><strong>Generation Task ID:</strong> {datasetMeta.taskId}</Text> */}
+                <Text><strong>Generation End:</strong> {new Date(datasetMeta.timestamp).toLocaleString()}</Text>
+                <Text><strong>Size:</strong> {(datasetMeta.size / 1_048_576).toFixed(2)} MB</Text>
+                <Text><strong>Type:</strong> {datasetMeta.dataType}</Text>
               </VStack>
             ) : (
               <Text color="red.500">No metadata available.</Text>
@@ -180,7 +199,6 @@ export default function HistoryPage() {
               colorScheme="blue"
               mr={3}
               onClick={downloadDataset}
-              isDisabled={!datasetMeta?.presignedUrl}
             >
               Download
             </Button>

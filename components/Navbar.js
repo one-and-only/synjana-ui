@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Flex,
@@ -22,6 +22,7 @@ export default function Navbar() {
   const router = useRouter();
   const { isOpen, onToggle } = useDisclosure();
   const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [apiToken, setApiToken] = useState(null);
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -38,6 +39,22 @@ export default function Navbar() {
       ],
     },
   ];
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("apiToken");
+    
+    if (storedToken === null) return;
+
+    const expiry = localStorage.getItem("tokenExpiry");
+    if (expiry === null) return;
+
+    if (parseInt(expiry) < Date.now()) {
+      localStorage.removeItem("apiToken");
+      localStorage.removeItem("tokenExpiry");
+    }
+
+    setApiToken(storedToken);
+  }, []);
 
   return (
     <Box position="fixed" top="0" w="100%" bg="white" boxShadow="md" zIndex="1000">
@@ -98,21 +115,40 @@ export default function Navbar() {
           ))}
 
           {/* Sign In & Sign Up Buttons */}
-          <Button
-            colorScheme="blue"
-            variant="outline"
-            size="md"
-            onClick={() => router.push("/sign-in")}
-          >
-            Sign In
-          </Button>
-          <Button
-            colorScheme="blue"
-            size="md"
-            onClick={() => router.push("/signup")}
-          >
-            Sign Up
-          </Button>
+          {apiToken === null &&
+            <>
+              <Button
+                colorScheme="blue"
+                variant="outline"
+                size="md"
+                onClick={() => router.push("/sign-in")}
+              >
+                Sign In
+              </Button>
+              <Button
+                colorScheme="blue"
+                size="md"
+                onClick={() => router.push("/signup")}
+              >
+                Sign Up
+              </Button>
+            </>
+          }
+          {
+            apiToken !== null &&
+            <Button
+              colorScheme="blue"
+              variant="outline"
+              size="md"
+              onClick={() => {
+                localStorage.removeItem("apiToken");
+                localStorage.removeItem("tokenExpiry");
+                window.location.reload();
+              }}
+            >
+              Logout
+            </Button>
+          }
         </Flex>
 
         {/* Mobile Menu Button */}

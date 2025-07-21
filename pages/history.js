@@ -27,21 +27,33 @@ import {
 } from "@chakra-ui/react";
 import { InfoOutlineIcon, DownloadIcon } from "@chakra-ui/icons";
 import Navbar from "../components/Navbar";
-import { useUserStore } from "../userStore";
 import { SynjanaCustodialApi } from "@aurora-interactive/synjana-custodial-api";
+import { useRouter } from "next/router";
 
 const apiSdk = new SynjanaCustodialApi();
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [records, setRecords] = useState([]);
   const [datasetMeta, setDatasetMeta] = useState(null);
   const [loadingMeta, setLoadingMeta] = useState(false);
+  const [apiToken, setApiToken] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const apiToken = useUserStore(state => state.apiToken);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("apiToken");
+
+    if (storedToken === null) {
+      router.push("/");
+      return;
+    }
+
+    setApiToken(storedToken);
+  }, []);
 
   useEffect(() => {
     async function getDatasets() {
-      if (!apiToken || apiToken === "") return;
+      if (apiToken === null) return;
 
       const datasets = await apiSdk.datasets.datasetsHistory({
         headers: {

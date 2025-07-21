@@ -69,7 +69,8 @@ export default function HistoryPage() {
           dataPoints: dataset.numDataPoints,
           datasetId: dataset.datasetId,
           size: dataset.size,
-          dataType: dataset.dataType
+          dataType: dataset.dataType,
+          context: dataset.context
         }
       )));
     }
@@ -80,8 +81,6 @@ export default function HistoryPage() {
     setLoadingMeta(true);
     onOpen();
 
-    console.log(records);
-    console.log(datasetId);
     const meta = records?.filter(x => x.datasetId === datasetId)[0];
 
     setDatasetMeta(meta);
@@ -194,7 +193,7 @@ export default function HistoryPage() {
             ) : datasetMeta ? (
               <VStack align="start" spacing={2}>
                 <Text><strong>Name:</strong> {datasetMeta.name}</Text>
-                <Text><strong>User notes:</strong> {datasetMeta.userInfo}</Text>
+                <Text><strong>User notes:</strong> {datasetMeta.context}</Text>
                 {/* <Text><strong>Original file:</strong> {datasetMeta.originalFileName}</Text> */}
                 {/* <Text><strong>Generation Task ID:</strong> {datasetMeta.taskId}</Text> */}
                 <Text><strong>Generation End:</strong> {new Date(datasetMeta.timestamp).toLocaleString()}</Text>

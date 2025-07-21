@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import {
   Box,
@@ -21,25 +21,64 @@ import {
   FaInfoCircle,
   FaSlidersH,
   FaTrash,
-  FaUpload,
 } from "react-icons/fa";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 
 export default function DataRequestPage() {
+
   const router = useRouter();
   const toast = useToast();
 
+  const [loading, setLoading] = useState(false);
   const [industry, setIndustry] = useState("");
   const [numSamples, setNumSamples] = useState(1000);
   const [featureConstraints, setFeatureConstraints] = useState([""]);
   const [datasetFile, setDatasetFile] = useState(null);
   const [context, setContext] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [waitingForCompletion, setWaitingForCompletion] = useState(false);
+  const [datasetTrained, setDatasetTrained] = useState(false);
+  const [datasetId, setDatasetId] = useState(null);
+
+  useEffect(() => {
+    const storedDatasetId = localStorage.getItem("datasetId");
+    const storedIsTrained = localStorage.getItem("isDatasetTrained");
+
+    if (storedDatasetId) {
+      setDatasetId(parseInt(storedDatasetId));
+    }
+
+    if (storedIsTrained) {
+      setDatasetTrained(true);
+    }
+  }, []);
 
   const generateData = async () => {
-    const { data } = await axios.get(`http://localhost:8000/generate?username=Revvz&dataset_id=6&num_samples=1`)
-    alert(data)
+    setDatasetTrained(false);
+    setWaitingForCompletion(true);
+
+    const { data } = await axios.get(`http://localhost:8000/generate?username=Revvz&dataset_id=${parseInt(localStorage.getItem("datasetId"))}`);
+    if (data.success) {
+      toast({
+        title: "Data Generation",
+        description: "Successfully generated your dataset. Please go to the history tab to view information and download.",
+        status: "success",
+        duration: 6000,
+        isClosable: true,
+      });
+      localStorage.removeItem("isDatasetTrained");
+      localStorage.removeItem("datasetId");
+    } else {
+      toast({
+        title: "Data Generation",
+        description: "Failed to generate data. An error occurred. Please refresh the page and try again.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+
+    setWaitingForCompletion(false);
   }
 
   const handleAddConstraint = () => {
@@ -63,6 +102,45 @@ export default function DataRequestPage() {
     setDatasetFile(file || null);
   };
 
+  const trainModel = async () => {
+    if (datasetId === -1) {
+      toast({
+        title: "Model Training",
+        description: "Are you sure you're allowed to train a model? Invalid dataset ID detected.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+
+    setWaitingForCompletion(true);
+    const { data } = await axios.post(`http://localhost:8000/train_vae?datasetId=${datasetId}&username=Revvz`)
+    if (data.success) {
+      setDatasetTrained(true);
+      localStorage.setItem("isDatasetTrained", "1");
+
+      toast({
+        title: "Model Training",
+        description: "Model trained successfully! You can now generate your data.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: "Model Training",
+        description: "Failed to train model! An error occurred.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+
+    setDatasetId(null);
+
+    setWaitingForCompletion(false);
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -79,7 +157,7 @@ export default function DataRequestPage() {
       return;
     }
 
-    if (numSamples < 1 || numSamples > 5000 || isNaN(numSamples)) {
+    if (numSamples < 1 || numSamples > 100_000 || isNaN(numSamples)) {
       toast({
         title: "Invalid Number of Data Points",
         description: "Please enter a valid number between 1 and 100,000.",
@@ -108,21 +186,38 @@ export default function DataRequestPage() {
       .filter((c) => c);
 
     const formData = new FormData();
-    formData.append("datasetFile", datasetFile);
+    formData.append("dataset_file", datasetFile);
 
     try {
-      const { data } = await axios.post("http://localhost:8000/preprocess_dataset?dataset_format=csv&username=Revvz", formData, {
+      const { data } = await axios.post(`http://localhost:8000/preprocess_dataset?dataset_format=csv&username=Revvz&num_data_points=${numSamples}&constraints=${encodeURIComponent(formattedConstraints.join(";"))}&industry=${encodeURIComponent(industry)}&context=${encodeURIComponent(context)}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (data.success) {
-        alert("Successfully preprocessed your dataset, redirecting to data generation page.");
+        setDatasetId(data.datasetId);
+        localStorage.setItem("datasetId", data.datasetId);
+
+        toast({
+          title: "Success",
+          description: "Successfully preprocessed your dataset, please train your model.",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Failed to preprocess your dataset. An error occurred",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       }
 
-      router.push(
-        `/tasks/${crypto.randomUUID()}?datasetId=${data.datasetId}`
-      );
-      alert("Functionality will be implemented soon!");
+      // router.push(
+      //   `/tasks/${crypto.randomUUID()}?datasetId=${data.datasetId}`
+      // );
+      // alert("Functionality will be implemented soon!");
     } catch (err) {
       console.error(err);
       toast({
@@ -234,11 +329,15 @@ export default function DataRequestPage() {
               />
             </FormControl>
 
-            <Button type="submit" colorScheme="blue" size="lg" w="full" mt={6}>
+            <Button type="submit" colorScheme="blue" isDisabled={Boolean(datasetId)} size="lg" w="full" mt={6}>
               {loading ? <Spinner size="sm" /> : "Preprocess Dataset"}
             </Button>
 
-            <Button mt={3} size="sm" onClick={generateData}>
+            <Button mt={3} size="lg" marginRight="10px" onClick={trainModel} disabled={!Boolean(datasetId)} isLoading={waitingForCompletion}>
+              Train VAE
+            </Button>
+
+            <Button mt={3} size="lg" onClick={generateData} disabled={!datasetTrained} isLoading={waitingForCompletion}>
               Generate Data
             </Button>
           </form>

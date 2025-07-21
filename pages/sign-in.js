@@ -7,15 +7,15 @@ import {
   FormLabel,
   Input,
   Button,
-  VStack,
   Text,
   Divider,
   HStack,
-  Icon,
 } from "@chakra-ui/react";
 // import { FaGoogle, FaApple, FaMicrosoft, FaPhone } from "react-icons/fa";
 import Navbar from "../components/Navbar";
-import { useUserStore } from "../userStore";
+import { SynjanaCustodialApi } from "@aurora-interactive/synjana-custodial-api";
+
+const apiClient = new SynjanaCustodialApi();
 
 export default function SignInPage() {
   const router = useRouter();
@@ -23,17 +23,17 @@ export default function SignInPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
 
-  const { apiToken, expiry, refreshTokenIfExpiring } = useUserStore();
-
   const login = async () => {
     setCheckingLogin(true);
-    if (apiToken !== "" && Date.now() <= expiry) {
-      alert("You are already logged in!");
-      return;
+
+    const loginRes = await apiClient.users.usersLogin({ email: formEmail, password: formPassword });
+    if (loginRes.success) {
+      localStorage.setItem("apiToken", loginRes.token);
+      localStorage.setItem("tokenExpiry", (Date.now() + 1000*60*60*24).toString()); // 1 day expiry
+      router.push("/");
     }
-    await refreshTokenIfExpiring(formEmail, formPassword);
+
     setCheckingLogin(false);
-    console.log(apiToken);
   }
 
   return (

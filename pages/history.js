@@ -27,21 +27,33 @@ import {
 } from "@chakra-ui/react";
 import { InfoOutlineIcon, DownloadIcon } from "@chakra-ui/icons";
 import Navbar from "../components/Navbar";
-import { useUserStore } from "../userStore";
 import { SynjanaCustodialApi } from "@aurora-interactive/synjana-custodial-api";
+import { useRouter } from "next/router";
 
 const apiSdk = new SynjanaCustodialApi();
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [records, setRecords] = useState([]);
   const [datasetMeta, setDatasetMeta] = useState(null);
   const [loadingMeta, setLoadingMeta] = useState(false);
+  const [apiToken, setApiToken] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const apiToken = useUserStore(state => state.apiToken);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("apiToken");
+
+    if (storedToken === null) {
+      router.push("/");
+      return;
+    }
+
+    setApiToken(storedToken);
+  }, []);
 
   useEffect(() => {
     async function getDatasets() {
-      if (!apiToken || apiToken === "") return;
+      if (apiToken === null) return;
 
       const datasets = await apiSdk.datasets.datasetsHistory({
         headers: {
@@ -57,7 +69,8 @@ export default function HistoryPage() {
           dataPoints: dataset.numDataPoints,
           datasetId: dataset.datasetId,
           size: dataset.size,
-          dataType: dataset.dataType
+          dataType: dataset.dataType,
+          context: dataset.context
         }
       )));
     }
@@ -68,8 +81,6 @@ export default function HistoryPage() {
     setLoadingMeta(true);
     onOpen();
 
-    console.log(records);
-    console.log(datasetId);
     const meta = records?.filter(x => x.datasetId === datasetId)[0];
 
     setDatasetMeta(meta);
@@ -182,7 +193,7 @@ export default function HistoryPage() {
             ) : datasetMeta ? (
               <VStack align="start" spacing={2}>
                 <Text><strong>Name:</strong> {datasetMeta.name}</Text>
-                <Text><strong>User notes:</strong> {datasetMeta.userInfo}</Text>
+                <Text><strong>User notes:</strong> {datasetMeta.context}</Text>
                 {/* <Text><strong>Original file:</strong> {datasetMeta.originalFileName}</Text> */}
                 {/* <Text><strong>Generation Task ID:</strong> {datasetMeta.taskId}</Text> */}
                 <Text><strong>Generation End:</strong> {new Date(datasetMeta.timestamp).toLocaleString()}</Text>

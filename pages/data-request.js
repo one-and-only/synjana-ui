@@ -39,8 +39,19 @@ export default function DataRequestPage() {
   const [waitingForCompletion, setWaitingForCompletion] = useState(false);
   const [datasetTrained, setDatasetTrained] = useState(false);
   const [datasetId, setDatasetId] = useState(null);
+  const [apiToken, setApiToken] = useState("");
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
+    const apiToken = localStorage.getItem("apiToken");
+    if (apiToken === null) {
+      router.push("/");
+      return;
+    }
+
+    setApiToken(apiToken);
+    setUsername(localStorage.getItem("username"));
+
     const storedDatasetId = localStorage.getItem("datasetId");
     const storedIsTrained = localStorage.getItem("isDatasetTrained");
 
@@ -57,7 +68,7 @@ export default function DataRequestPage() {
     setDatasetTrained(false);
     setWaitingForCompletion(true);
 
-    const { data } = await axios.get(`http://localhost:8000/generate?username=Revvz&dataset_id=${parseInt(localStorage.getItem("datasetId"))}`);
+    const { data } = await axios.get(`http://localhost:8000/generate?username=${username}&dataset_id=${parseInt(datasetId)}`);
     if (data.success) {
       toast({
         title: "Data Generation",
@@ -114,7 +125,7 @@ export default function DataRequestPage() {
     }
 
     setWaitingForCompletion(true);
-    const { data } = await axios.post(`http://localhost:8000/train_vae?datasetId=${datasetId}&username=Revvz`)
+    const { data } = await axios.post(`http://localhost:8000/train_vae?datasetId=${datasetId}&username=${username}`)
     if (data.success) {
       setDatasetTrained(true);
       localStorage.setItem("isDatasetTrained", "1");
@@ -189,7 +200,7 @@ export default function DataRequestPage() {
     formData.append("dataset_file", datasetFile);
 
     try {
-      const { data } = await axios.post(`http://localhost:8000/preprocess_dataset?dataset_format=csv&username=Revvz&num_data_points=${numSamples}&constraints=${encodeURIComponent(formattedConstraints.join(";"))}&industry=${encodeURIComponent(industry)}&context=${encodeURIComponent(context)}`, formData, {
+      const { data } = await axios.post(`http://localhost:8000/preprocess_dataset?dataset_format=csv&username=${username}&num_data_points=${numSamples}&constraints=${encodeURIComponent(formattedConstraints.join(";"))}&industry=${encodeURIComponent(industry)}&context=${encodeURIComponent(context)}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

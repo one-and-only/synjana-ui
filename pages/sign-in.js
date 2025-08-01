@@ -10,6 +10,7 @@ import {
   Text,
   Divider,
   HStack,
+  useToast
 } from "@chakra-ui/react";
 // import { FaGoogle, FaApple, FaMicrosoft, FaPhone } from "react-icons/fa";
 import Navbar from "../components/Navbar";
@@ -22,6 +23,7 @@ export default function SignInPage() {
   const [checkingLogin, setCheckingLogin] = useState(false);
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
+  const toast = useToast();
 
   const login = async () => {
     setCheckingLogin(true);
@@ -30,7 +32,23 @@ export default function SignInPage() {
     if (loginRes.success) {
       localStorage.setItem("apiToken", loginRes.token);
       localStorage.setItem("tokenExpiry", (Date.now() + 1000*60*60*24).toString()); // 1 day expiry
+
+      const userInfo = await apiClient.users.usersInfo({
+        headers: {
+          "Authorization": `Bearer ${loginRes.token}`
+        }
+      });
+
+      localStorage.setItem("username", userInfo.username);
       router.push("/");
+    } else {
+      toast({
+        title: "Login",
+        description: "Invalid username or password",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
     }
 
     setCheckingLogin(false);

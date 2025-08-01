@@ -68,7 +68,7 @@ export default function DataRequestPage() {
     setDatasetTrained(false);
     setWaitingForCompletion(true);
 
-    const { data } = await axios.get(`http://localhost:8000/generate?username=${username}&dataset_id=${parseInt(datasetId)}`);
+    const { data } = await axios.get(`${process.env.NEXT_PUBLIC_VAE_API_HOST}/generate?username=${username}&dataset_id=${parseInt(datasetId)}`);
     if (data.success) {
       toast({
         title: "Data Generation",
@@ -125,7 +125,7 @@ export default function DataRequestPage() {
     }
 
     setWaitingForCompletion(true);
-    const { data } = await axios.post(`http://localhost:8000/train_vae?datasetId=${datasetId}&username=${username}`)
+    const { data } = await axios.post(`${process.env.NEXT_PUBLIC_VAE_API_HOST}/train_vae?datasetId=${datasetId}&username=${username}`)
     if (data.success) {
       setDatasetTrained(true);
       localStorage.setItem("isDatasetTrained", "1");
@@ -200,7 +200,7 @@ export default function DataRequestPage() {
     formData.append("dataset_file", datasetFile);
 
     try {
-      const { data } = await axios.post(`http://localhost:8000/preprocess_dataset?dataset_format=csv&username=${username}&num_data_points=${numSamples}&constraints=${encodeURIComponent(formattedConstraints.join(";"))}&industry=${encodeURIComponent(industry)}&context=${encodeURIComponent(context)}`, formData, {
+      const { data } = await axios.post(`${process.env.NEXT_PUBLIC_VAE_API_HOST}/preprocess_dataset?dataset_format=csv&username=${username}&num_data_points=${numSamples}&constraints=${encodeURIComponent(formattedConstraints.join(";"))}&industry=${encodeURIComponent(industry)}&context=${encodeURIComponent(context)}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

@@ -7,14 +7,12 @@ import {
   FormLabel,
   Input,
   Button,
-  VStack,
   Text,
   Divider,
   HStack,
-  Icon,
   Flex,
 } from "@chakra-ui/react";
-import { /*FaGoogle, FaApple, FaMicrosoft,*/ FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 
 export default function SignupPage() {
@@ -112,48 +110,6 @@ export default function SignupPage() {
 
           {/*  Divider */}
           <Divider borderColor="gray.300" my={4} />
-
-          {/*  Social Auth Options */}
-          {/* <VStack spacing={3}>
-            <Button
-              width="full"
-              leftIcon={<Icon as={FaGoogle} />}
-              bg="white"
-              color="black"
-              border="1px solid #CBD5E0"
-              _hover={{ bg: "gray.200", transform: "scale(1.02)" }}
-              transition="0.3s ease-in-out"
-              p={5}
-            >
-              Continue with Google
-            </Button>
-
-            <Button
-              width="full"
-              leftIcon={<Icon as={FaMicrosoft} />}
-              bg="white"
-              color="black"
-              border="1px solid #CBD5E0"
-              _hover={{ bg: "gray.200", transform: "scale(1.02)" }}
-              transition="0.3s ease-in-out"
-              p={5}
-            >
-              Continue with Microsoft Account
-            </Button>
-
-            <Button
-              width="full"
-              leftIcon={<Icon as={FaApple} />}
-              bg="white"
-              color="black"
-              border="1px solid #CBD5E0"
-              _hover={{ bg: "gray.200", transform: "scale(1.02)" }}
-              transition="0.3s ease-in-out"
-              p={5}
-            >
-              Continue with Apple
-            </Button>
-          </VStack> */}
         </Box>
       </Box>
     </Box>

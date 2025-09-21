@@ -14,6 +14,10 @@ import {
 } from "@chakra-ui/react";
 import { FaArrowLeft } from "react-icons/fa";
 import Navbar from "../components/Navbar";
+// import { SynjanaCustodialApi } from "@aurora-interactive/synjana-custodial-api";
+
+// const apiClient = new SynjanaCustodialApi();
+// apiClient.users.usersRegister();
 
 export default function SignupPage() {
   const router = useRouter();
@@ -96,8 +100,9 @@ export default function SignupPage() {
             p={6}
             borderRadius="12px"
             mb={4}
+            disabled={true}
           >
-            Continue
+            Disabled
           </Button>
 
           {/*  Login Option */}

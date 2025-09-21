@@ -14,7 +14,7 @@ import {
 import { useRouter } from "next/router";
 import { FaRocket, FaHistory, FaChartLine, FaDatabase, FaCogs } from "react-icons/fa";
 import Navbar from "../components/Navbar"; 
-import Footer from "../components/Footer"; 
+import Footer from "../components/Footer";
 
 export default function HomePage() {
   const router = useRouter();

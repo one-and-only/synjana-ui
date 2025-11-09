@@ -129,7 +129,7 @@ export default function DataRequestPage() {
     }
 
     setWaitingForCompletion(true);
-    const { data } = await axios.post(`${process.env.NEXT_PUBLIC_VAE_API_HOST}/train_vae?datasetId=${datasetId}`, {
+    const { data } = await axios.post(`${process.env.NEXT_PUBLIC_VAE_API_HOST}/train_vae?datasetId=${datasetId}`, {}, {
       headers: {
         "Authorization": `Bearer ${apiToken}`
       }
